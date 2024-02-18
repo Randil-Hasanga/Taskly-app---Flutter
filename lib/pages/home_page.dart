@@ -21,6 +21,7 @@ class _HomePageState extends State<HomePage> {
     _deviceHeight = MediaQuery.of(context).size.height;
     _deviceWidth = MediaQuery.of(context).size.width;
     //print("Input value : $_newTaskContent");
+  
 
     return Scaffold(
       appBar: AppBar(
@@ -43,12 +44,14 @@ class _HomePageState extends State<HomePage> {
 // circular progress
   Widget _tasksView() {
     return FutureBuilder(
-      future: Hive.openBox("tasks"),
+      future: Hive.openBox('tasks'),
       builder: (BuildContext _context, AsyncSnapshot _snapshot) {
         if (_snapshot.connectionState == ConnectionState.done){
           return _taskList();
         } else {
-          return CircularProgressIndicator();
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
         }
       },
     );
