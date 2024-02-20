@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:taskly/models/task.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -12,6 +13,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late double _deviceHeight, _deviceWidth;
+  Box? _box;
 
   String? _newTaskContent;
   _HomePageState();
@@ -21,7 +23,6 @@ class _HomePageState extends State<HomePage> {
     _deviceHeight = MediaQuery.of(context).size.height;
     _deviceWidth = MediaQuery.of(context).size.width;
     //print("Input value : $_newTaskContent");
-  
 
     return Scaffold(
       appBar: AppBar(
@@ -46,7 +47,8 @@ class _HomePageState extends State<HomePage> {
     return FutureBuilder(
       future: Hive.openBox('tasks'),
       builder: (BuildContext _context, AsyncSnapshot _snapshot) {
-        if (_snapshot.connectionState == ConnectionState.done){
+        if (_snapshot.hasData) {
+          _box = _snapshot.data;
           return _taskList();
         } else {
           return const Center(
@@ -58,20 +60,41 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _taskList() {
-    return ListView(
-      children: [
-        ListTile(
-          title: const Text(
-            "Go school",
-            style: TextStyle(decoration: TextDecoration.lineThrough),
+    List tasks = _box!.values.toList();
+    return ListView.builder(
+      itemCount: tasks.length,
+      itemBuilder: (BuildContext _context, int _index) {
+        var task = Task.fromMap(tasks[_index]);
+        return ListTile(
+          title: Text(
+            task.content,
+            style: TextStyle(
+                decoration: task.done ? TextDecoration.lineThrough : null),
           ),
-          subtitle: Text(DateTime.now().toString()),
+          subtitle: Text(task.timestamp.toString()),
           trailing: Icon(
-            Icons.check_box_outlined,
+            task.done
+                ? Icons.check_box_outlined
+                : Icons.check_box_outline_blank_outlined,
             color: Theme.of(context).primaryColor,
           ),
-        ),
-      ],
+          onTap: () {
+            setState(() {
+              task.done = !task.done;
+              _box!.putAt(
+                _index,
+                task.toMap(),
+              );
+            });
+          },
+          onLongPress: () {
+            _box!.delete(_index);
+            setState(() {
+              
+            });
+          },
+        );
+      },
     );
   }
 
@@ -89,10 +112,22 @@ class _HomePageState extends State<HomePage> {
         return AlertDialog(
           title: const Text("Add new task"),
           content: TextField(
-            onSubmitted: (value) {},
-            onChanged: (value) {
+            onSubmitted: (_) {
+              if (_newTaskContent != null) {
+                var _task = Task(
+                    content: _newTaskContent!,
+                    timestamp: DateTime.now(),
+                    done: false);
+                _box!.add(_task.toMap());
+              }
               setState(() {
-                _newTaskContent = value;
+                _newTaskContent = null;
+                Navigator.pop(context);
+              });
+            },
+            onChanged: (_value) {
+              setState(() {
+                _newTaskContent = _value;
               });
             },
           ),
